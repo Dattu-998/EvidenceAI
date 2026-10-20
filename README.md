@@ -55,7 +55,8 @@ To run locally without the API docker container:
 ## Configuration
 See `.env.example` for all configurable environment variables.
 - `DATABASE_URL`: PostgreSQL connection string.
-- `LLM_PROVIDER`: Choose `dummy` for mock testing or future real providers.
+- `LLM_PROVIDER`: Choose `dummy` for mock testing, or `groq` to use the Groq API for generation.
+- `GROQ_API_KEY`: Required if `LLM_PROVIDER` is set to `groq`. Paste your key here to connect to Groq.
 - `EMBEDDING_MODEL_PATH`: Change the sentence-transformer model used (defaults to `all-MiniLM-L6-v2`).
 
 ## API Examples
@@ -89,6 +90,6 @@ PYTHONPATH=. pytest
 ```
 
 ## Known Limitations
-- The LLM Provider logic currently utilizes a `dummy` generator. Real provider integrations (OpenAI, Ollama, etc.) are stubbed and marked as Phase D extensions.
+- The LLM Provider logic supports a `dummy` generator for offline testing, and a `groq` provider using `llama3-8b-8192`. Other integrations (OpenAI, local Ollama) remain as future extensions.
 - Multi-user authentication is currently mocked to use a static test user in the `app.security.access` module.
 - BM25 retrieval uses an in-memory Okapi BM25 implementation which loads all document chunks for scoring. It will not scale for huge text bases but suffices for the baseline slice.
