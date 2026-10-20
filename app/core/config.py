@@ -3,7 +3,7 @@ from typing import Optional
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "EvidenceAI"
-    DATABASE_URL: str = "postgresql://user:password@localhost:5432/evidenceai"
+    DATABASE_URL: str = "postgresql+psycopg://user:password@localhost:5432/evidenceai"
     LLM_PROVIDER: str = "dummy"
     OPENAI_API_KEY: Optional[str] = None
     GROQ_API_KEY: Optional[str] = None
