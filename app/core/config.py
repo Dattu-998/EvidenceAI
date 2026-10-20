@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = None
     GROQ_API_KEY: Optional[str] = None
     EMBEDDING_MODEL_PATH: str = "all-MiniLM-L6-v2"
+    RERANKER_MODEL_PATH: Optional[str] = None
     VECTOR_DIMENSION: int = 384
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
