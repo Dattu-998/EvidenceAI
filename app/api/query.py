@@ -31,9 +31,13 @@ def query_documents(
     elif request.retrieval_mode == "bm25":
         evidence = search_bm25(db, request.query, top_k=request.top_k, document_ids=user_docs)
     elif request.retrieval_mode == "hybrid":
-        evidence = hybrid_search(db, request.query, top_k=request.top_k, document_ids=user_docs)
+        # Get more documents for hybrid before reranking
+        evidence = hybrid_search(db, request.query, top_k=request.top_k * 2, document_ids=user_docs)
     else:
         raise HTTPException(status_code=400, detail="Invalid retrieval mode")
+
+    from app.retrieval.reranker import rerank_documents
+    evidence = rerank_documents(request.query, evidence, top_k=request.top_k)
 
     answer, citations = generate_answer(request.query, evidence)
 

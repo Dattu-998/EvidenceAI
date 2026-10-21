@@ -1,0 +1,49 @@
+[
+    {
+        "id": 1,
+        "query": "What is the primary goal of EvidenceAI?",
+        "expected_facts": [
+            "answer complex questions over unstructured documents like PDFs"
+        ],
+        "expected_filename": "evidenceai_overview.pdf",
+        "expected_page": 1,
+        "is_answerable": true
+    },
+    {
+        "id": 2,
+        "query": "What database does EvidenceAI use for data storage?",
+        "expected_facts": [
+            "PostgreSQL extended with the pgvector module"
+        ],
+        "expected_filename": "evidenceai_overview.pdf",
+        "expected_page": 2,
+        "is_answerable": true
+    },
+    {
+        "id": 3,
+        "query": "How does EvidenceAI combine lexical and semantic search?",
+        "expected_facts": [
+            "Hybrid Retrieval using Reciprocal Rank Fusion",
+            "RRF"
+        ],
+        "expected_filename": "evidenceai_overview.pdf",
+        "expected_page": 3,
+        "is_answerable": true
+    },
+    {
+        "id": 4,
+        "query": "Who is the CEO of EvidenceAI?",
+        "expected_facts": [],
+        "expected_filename": null,
+        "expected_page": null,
+        "is_answerable": false
+    },
+    {
+        "id": 5,
+        "query": "What language is the frontend built in?",
+        "expected_facts": [],
+        "expected_filename": null,
+        "expected_page": null,
+        "is_answerable": false
+    }
+]
