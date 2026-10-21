@@ -8,8 +8,9 @@ API_URL = "http://localhost:8000"
 
 def wait_for_document_processing(doc_id: str, client: httpx.Client, timeout_sec: int = 30):
     start_time = time.time()
+    auth_headers = {"Authorization": "Bearer eval_user"}
     while time.time() - start_time < timeout_sec:
-        res = client.get(f"{API_URL}/documents/{doc_id}")
+        res = client.get(f"{API_URL}/documents/{doc_id}", headers=auth_headers)
         if res.status_code == 200:
             status = res.json().get("status")
             if status == "ready":
@@ -23,6 +24,12 @@ def wait_for_document_processing(doc_id: str, client: httpx.Client, timeout_sec:
 
 def evaluate():
     print("Starting Evaluation Harness...")
+
+    if not os.path.exists("eval/ground_truth.json") or not os.path.exists("eval/data/evidenceai_overview.pdf"):
+        print("Generating missing dataset...")
+        from eval.generate_dataset import generate_pdf, generate_ground_truth
+        generate_pdf()
+        generate_ground_truth()
 
     with open("eval/ground_truth.json", "r") as f:
         ground_truth = json.load(f)
@@ -43,16 +50,19 @@ def evaluate():
     pdf_path = "eval/data/evidenceai_overview.pdf"
     print(f"Uploading {pdf_path}...")
 
+    auth_headers = {"Authorization": "Bearer eval_user"}
+
     # Try to delete existing first for clean eval
-    docs_res = client.get(f"{API_URL}/documents")
+    docs_res = client.get(f"{API_URL}/documents", headers=auth_headers)
     if docs_res.status_code == 200:
         for d in docs_res.json():
             if d["filename"] == os.path.basename(pdf_path):
-                client.delete(f"{API_URL}/documents/{d['id']}")
+                client.delete(f"{API_URL}/documents/{d['id']}", headers=auth_headers)
 
     with open(pdf_path, "rb") as f:
         upload_res = client.post(
             f"{API_URL}/documents",
+            headers=auth_headers,
             files={"file": (os.path.basename(pdf_path), f, "application/pdf")}
         )
 
@@ -87,6 +97,7 @@ def evaluate():
         start_time = time.time()
         res = client.post(
             f"{API_URL}/query",
+            headers=auth_headers,
             json={"query": query, "retrieval_mode": "hybrid", "top_k": 5}
         )
         latency = time.time() - start_time
@@ -122,25 +133,37 @@ def evaluate():
                 metrics["citation_accuracy"] += 1
 
             # Basic Correctness Check (Does the answer contain the expected facts?)
+            # Use lenient token overlap since exact string match is brittle without LLM-as-a-judge
             correct = True
+            answer_lower = answer.lower()
             for fact in item["expected_facts"]:
-                # Simple exact match for keywords. In real eval, use an LLM evaluator.
-                # For Groq Llama3, it might rephrase, so we do a lenient check or just manual review
-                # Since we don't have a reliable LLM-as-a-judge here without another prompt, we use soft matching.
-                # If we use dummy, it definitely won't match, but with Groq it should.
-                pass
+                fact_tokens = set(fact.lower().split())
+                answer_tokens = set(answer_lower.split())
+                # If we have at least 50% overlap of significant words
+                overlap = len(fact_tokens.intersection(answer_tokens))
+                if overlap < len(fact_tokens) * 0.5:
+                    correct = False
 
-            # Since strict string matching is brittle, we'll approximate correctness based on retrieval + answer length
-            if retrieved_correct_page and len(answer) > 20 and "sufficient evidence" not in answer.lower():
+            # Refusal keywords
+            refusal_keywords = ["cannot answer", "do not have", "no information", "insufficient evidence", "not find sufficient", "not mention"]
+            is_refusal = any(kw in answer_lower for kw in refusal_keywords)
+
+            if retrieved_correct_page and correct and not is_refusal:
                 metrics["answer_correctness"] += 1
+            elif not correct:
+                print("  [Failure] Answer did not contain expected facts.")
 
             # False Refusal Check
-            if "could not find sufficient evidence" in answer.lower():
+            if is_refusal:
                 print("  [Failure] False refusal detected.")
                 metrics["false_refusals"] += 1
 
         else: # Unanswerable
-            if "could not find sufficient evidence" in answer.lower():
+            refusal_keywords = ["cannot answer", "do not have", "no information", "insufficient evidence", "not find sufficient", "not mention", "i cannot"]
+            answer_lower = answer.lower()
+            is_refusal = any(kw in answer_lower for kw in refusal_keywords)
+
+            if is_refusal:
                 print("  [Success] Correctly refused to answer.")
                 metrics["correct_refusals"] += 1
             else:
@@ -174,7 +197,7 @@ def evaluate():
     print("="*50)
 
     # Clean up (Optional, but good practice for testing)
-    client.delete(f"{API_URL}/documents/{doc_id}")
+    client.delete(f"{API_URL}/documents/{doc_id}", headers=auth_headers)
 
 if __name__ == "__main__":
     evaluate()

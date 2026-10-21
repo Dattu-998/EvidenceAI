@@ -65,6 +65,7 @@ See `.env.example` for all configurable environment variables.
 ```bash
 curl -X POST "http://localhost:8000/documents" \
      -H "accept: application/json" \
+     -H "Authorization: Bearer test_user_1" \
      -H "Content-Type: multipart/form-data" \
      -F "file=@sample.pdf"
 ```
@@ -73,6 +74,7 @@ curl -X POST "http://localhost:8000/documents" \
 ```bash
 curl -X POST "http://localhost:8000/query" \
      -H "accept: application/json" \
+     -H "Authorization: Bearer test_user_1" \
      -H "Content-Type: application/json" \
      -d '{
            "query": "What is the main topic of the document?",
@@ -90,6 +92,6 @@ PYTHONPATH=. pytest
 ```
 
 ## Known Limitations
-- The LLM Provider logic supports a `dummy` generator for offline testing, and a `groq` provider using `llama3-8b-8192`. Other integrations (OpenAI, local Ollama) remain as future extensions.
-- Multi-user authentication is currently mocked to use a static test user in the `app.security.access` module.
+- The LLM Provider logic supports a `dummy` generator for offline testing, and a `groq` provider using `qwen/qwen3.8-27b`. Other integrations (OpenAI, local Ollama) remain as future extensions.
+- Multi-user authentication is currently simulated using the `Authorization: Bearer <user_id>` header. A real JWT token verifier would be needed for production.
 - BM25 retrieval uses an in-memory Okapi BM25 implementation which loads all document chunks for scoring. It will not scale for huge text bases but suffices for the baseline slice.
